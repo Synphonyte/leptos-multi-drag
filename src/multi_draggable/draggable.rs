@@ -1,25 +1,28 @@
-use leptos::html::{Div};
+use leptos::html::Div;
 use leptos::*;
 use leptos_use::core::Position;
 use leptos_use::*;
+use std::fmt::Display;
+use std::hash::Hash;
 use std::time::Duration;
 use wasm_bindgen::JsCast;
 
 #[component]
-pub fn Draggable<OnLoad, OnAdd, OnRm>(
-    id: &'static str,
+pub fn Draggable<ID, OnLoad, OnAdd, OnRm>(
+    id: ID,
     highlight_target: RwSignal<bool>,
     container: NodeRef<Div>,
     target_el: NodeRef<Div>,
     set_cursor: WriteSignal<&'static str>,
-    selected: RwSignal<Option<&'static str>>,
+    selected: RwSignal<Option<ID>>,
     on_load: OnLoad,
     on_item_add: OnAdd,
     on_item_remove: OnRm,
     children: Children,
 ) -> impl IntoView
 where
-    OnLoad: Fn(&'static str, NodeRef<Div>) + Clone + 'static,
+    ID: Clone + Display + Eq + Hash + 'static,
+    OnLoad: Fn(ID, NodeRef<Div>) + Clone + 'static,
     OnAdd: Fn() + Clone + 'static,
     OnRm: Fn() + Clone + 'static,
 {
@@ -39,46 +42,48 @@ where
 
     let is_self_hovered = use_element_hover(el_ref);
 
-    on_load(id, el_ref);
+    on_load(id.clone(), el_ref);
 
-    let on_drag_start = move |args: UseDraggableCallbackArgs| {
-        let UseDraggableCallbackArgs { position, event } = args;
+    let on_drag_start = {
+        let id = id.clone();
+        move |args: UseDraggableCallbackArgs| {
+            let UseDraggableCallbackArgs { position, event } = args;
 
-        selected.set(Some(id));
+            selected.set(Some(id.clone()));
 
-        if let Some(html_el) = el_ref.get_untracked() {
-            let element = html_el.unchecked_ref::<web_sys::Element>();
+            if let Some(html_el) = el_ref.get_untracked() {
+                let element = html_el.unchecked_ref::<web_sys::Element>();
 
-            if let Ok(el_cloned) = element.clone_node_with_deep(true) {
-                if let Some(container) = container.get_untracked() {
-                    container.append_child(&el_cloned).ok();
-                };
-                set_el_ref_clone(Some(el_cloned.unchecked_into()));
+                if let Ok(el_cloned) = element.clone_node_with_deep(true) {
+                    if let Some(container) = container.get_untracked() {
+                        container.append_child(&el_cloned).ok();
+                    };
+                    set_el_ref_clone(Some(el_cloned.unchecked_into()));
+                }
             }
-        }
 
-        let container_rect = container
-            .get_untracked()
-            .expect("not empty")
-            .get_bounding_client_rect();
+            let container_rect = container
+                .get_untracked()
+                .expect("not empty")
+                .get_bounding_client_rect();
 
-        let el_rect = el_ref
-            .get_untracked()
-            .expect("not empty")
-            .get_bounding_client_rect();
+            let el_rect = el_ref
+                .get_untracked()
+                .expect("not empty")
+                .get_bounding_client_rect();
 
-        initial_value.set(Position {
-            x: event.x() as f64 - position.x,
-            y: event.y() as f64 - position.y,
-        });
+            initial_value.set(Position {
+                x: event.x() as f64 - position.x,
+                y: event.y() as f64 - position.y,
+            });
 
-        drag_offset.set(Position {
-            x: container_rect.left(),
-            y: container_rect.top(),
-        });
+            drag_offset.set(Position {
+                x: container_rect.left(),
+                y: container_rect.top(),
+            });
 
-        set_dragging_style(format!(
-            "
+            set_dragging_style(format!(
+                "
                 position: absolute; \
                 pointer-events: none; \
                 z-index: 100; \
@@ -88,29 +93,30 @@ where
                 width: {}px; \
                 height: {}px;
             ",
-            el_rect.width(),
-            el_rect.height()
-        ));
+                el_rect.width(),
+                el_rect.height()
+            ));
 
-        set_cursor("grabbing");
+            set_cursor("grabbing");
 
-        set_transition("");
+            set_transition("");
 
-        set_dragging_proxy_style(
-            "\
+            set_dragging_proxy_style(
+                "\
                 cursor: grabbing;\
                 pointer-events: none;\
                 user-select: none;\
                 visibility: hidden;\
             ",
-        );
+            );
 
-        true
+            true
+        }
     };
 
     let on_drag_move = move |args: UseDraggableCallbackArgs| {
         if let Some(target_el) = target_el.get_untracked() {
-            let UseDraggableCallbackArgs { position, event } = args;
+            let UseDraggableCallbackArgs { event, .. } = args;
 
             let mut target = Some(event_target::<web_sys::Element>(&event));
 
@@ -126,9 +132,7 @@ where
         }
     };
 
-    let on_drag_end = move |args: UseDraggableCallbackArgs| {
-        let UseDraggableCallbackArgs { position, event } = args;
-
+    let on_drag_end = move |_args: UseDraggableCallbackArgs| {
         if is_target_hovered.get_untracked() {
             let element = el_ref_clone
                 .get_untracked()
@@ -199,9 +203,11 @@ where
         }
     });
 
+    let id_key = id.clone();
+
     let selected_style = Signal::derive(move || {
         if let Some(key) = selected() {
-            if key == id {
+            if key == id_key.clone() {
                 "background-color: blue;".to_string()
             } else {
                 "background-color: white;".to_string()
