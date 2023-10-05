@@ -145,28 +145,26 @@ where
                     <For
                         each=available_filtered
                         key=|item| format!("{}", item.key)
-                        view=move |item| {
-                            view! {
-                                <Draggable
-                                    id=item.key.clone()
-                                    highlight_target=highlight_target_2
-                                    container=anchor
-                                    target_el=drag_target_2
-                                    set_cursor=set_cursor
-                                    selected=selected_key
-                                    on_load=on_load(available_node_refs)
-                                    on_item_add={
-                                        let item = item.clone();
-                                        move || on_item_add(item.clone(), assigned, assigned_node_refs)}
-                                    on_item_remove={
-                                        let item = item.clone();
-                                        move || on_item_remove(item.clone(), available, available_node_refs)}
-                                >
-                                    {item.display_name}
-                                </Draggable>
-                            }
-                        }
-                    />
+                        let:item
+                    >
+                        <Draggable
+                            id=item.key.clone()
+                            highlight_target=highlight_target_2
+                            container=anchor
+                            target_el=drag_target_2
+                            set_cursor=set_cursor
+                            selected=selected_key
+                            on_load=on_load(available_node_refs)
+                            on_item_add={
+                                let item = item.clone();
+                                move || on_item_add(item.clone(), assigned, assigned_node_refs)}
+                            on_item_remove={
+                                let item = item.clone();
+                                move || on_item_remove(item.clone(), available, available_node_refs)}
+                        >
+                            {item.display_name}
+                        </Draggable>
+                    </For>
                 </div>
 
                 <div class="drop_zone zone_2" node_ref=drag_target_2 style=get_style_target(highlight_target_2)>
@@ -174,28 +172,26 @@ where
                     <For
                         each=assigned_filtered
                         key=|item| format!("{}", item.key)
-                        view=move |item| {
-                            view! {
-                                <Draggable
-                                    id=item.key.clone()
-                                    highlight_target=highlight_target_1
-                                    container=anchor
-                                    target_el=drag_target_1
-                                    set_cursor=set_cursor
-                                    selected=selected_key
-                                    on_load=on_load(assigned_node_refs)
-                                    on_item_add={
-                                        let item = item.clone();
-                                        move || on_item_add(item.clone(), available, available_node_refs)}
-                                    on_item_remove={
-                                        let item = item.clone();
-                                        move || on_item_remove(item.clone(), assigned, assigned_node_refs)}
-                                >
-                                    {item.display_name}
-                                </Draggable>
-                            }
-                        }
-                    />
+                        let:item
+                    >
+                        <Draggable
+                            id=item.key.clone()
+                            highlight_target=highlight_target_1
+                            container=anchor
+                            target_el=drag_target_1
+                            set_cursor=set_cursor
+                            selected=selected_key
+                            on_load=on_load(assigned_node_refs)
+                            on_item_add={
+                                let item = item.clone();
+                                move || on_item_add(item.clone(), available, available_node_refs)}
+                            on_item_remove={
+                                let item = item.clone();
+                                move || on_item_remove(item.clone(), assigned, assigned_node_refs)}
+                        >
+                            {item.display_name}
+                        </Draggable>
+                    </For>
                 </div>
             </div>
         </div>
